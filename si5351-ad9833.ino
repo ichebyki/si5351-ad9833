@@ -11,9 +11,13 @@
 #include "gen5351.h"
 #include "gen9833.h"
 
-int _memoryFree();
-//#define Serial_print_memoryFree { Serial.print(_memoryFree()); Serial.print(" "); }
-#define Serial_print_memoryFree (void)0 // disable memory free
+//#define _CHECK_MEMORY_FREE_
+#ifdef _CHECK_MEMORY_FREE_
+  int _memoryFree();
+  #define Serial_print_memoryFree { Serial.print(_memoryFree()); Serial.print(" "); }
+#else
+  #define Serial_print_memoryFree (void)0 // disable memory free
+#endif
 
 void ClickF();
 void RightF();
@@ -61,10 +65,8 @@ void setup() {
   g->welcome(lcd);
   
   enc.attach(CLICK_HANDLER, ClickF);
-  enc.attach(RIGHT_HANDLER, RightF);
-  enc.attach(LEFT_HANDLER, LeftF);
-  enc.attach(RIGHT_H_HANDLER, RightHoldF);
-  enc.attach(LEFT_H_HANDLER, LeftHoldF);
+  enc.attach(TURN_HANDLER, turnF);
+  enc.attach(TURN_H_HANDLER, turnHoldF);
   enc.attach(HOLDED_HANDLER, HoldedF);
 
   g->showFreq(lcd);
@@ -90,6 +92,11 @@ void loop() {
   }
 }
 
+void tick2reset() {
+  tick2mill = 0;
+  tick2name = true;
+}
+
 void ClickF() {
   if (g2mode) {
     g2->cycleWaveType();
@@ -98,31 +105,14 @@ void ClickF() {
 
 }
  
-void tick2reset() {
-  tick2mill = 0;
-  tick2name = true;
-}
-
-void RightF() {
-  g->change_freq(1);
+void turnF() {
+  g->change_freq(enc.getDir());
   tick2reset();
 }
 
-void LeftF() {
-  g->change_freq(-1);
-  tick2reset();
-}
-
-void RightHoldF() {
+void turnHoldF() {
   time_now = (millis() + 100);
-  g->increment_fstep(1);
-  tick2reset();
-  delay(100);
-}
-
-void LeftHoldF() {
-  time_now = (millis() + 100);
-  g->increment_fstep(-1);
+  g->increment_fstep(enc.getDir());
   tick2reset();
   delay(100);
 }
