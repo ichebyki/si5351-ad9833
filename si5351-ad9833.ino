@@ -37,7 +37,7 @@ LiquidCrystal_I2C *lcd = new LiquidCrystal_I2C(0x27, 16, 2);
 
 gen5351 *g1;
 gen9833 *g2;
-genX *g;
+genBase *g;
 bool g2mode = false;          // true if ad9833 is current
 
 bool tick2name = true;
@@ -50,8 +50,10 @@ unsigned long time_now = 0;  // millis display active
 
 void setup() {
   Wire.begin();
+#ifdef _CHECK_MEMORY_FREE_
   Serial.begin(9600);
-    
+#endif
+
   lcd->init();
   lcd->backlight();
 
@@ -112,7 +114,7 @@ void turnF() {
 
 void turnHoldF() {
   time_now = (millis() + 100);
-  g->increment_fstep(enc.getDir());
+  g->change_fstep(enc.getDir());
   tick2reset();
   delay(100);
 }

@@ -2,9 +2,9 @@
 #define GEN_AD9833_H
 
 #include <AD9833.h>               // https://github.com/Billwilliams1952/AD9833-Library-Arduino 
-#include "genX.h"
+#include "genBase.h"
 
-class gen9833: public genX {
+class gen9833: public genBase {
 public:
   gen9833(uint8_t _FNCpin, uint32_t _referenceFrequency = 25000000UL) {
     FNCpin = _FNCpin;
@@ -50,17 +50,31 @@ public:
                         phaseInDeg);
   }
 
+  void change_fstep(short dir = 1) override {
+    genBase::change_fstep(dir);
+    if (fstep > 1000000) {
+      fstep = 1000000;
+    }
+  }
+  
+  void change_freq(short dir) override {
+    genBase::change_freq(dir);
+
+    if (freq < 1) {
+      freq = 1;
+    } else if (freq > 12000000) {
+      freq = 12000000;
+    }
+  }
+
   void showFreq(LiquidCrystal_I2C *lcd) override {
-    genX::showFreq(lcd);
+    genBase::showFreq(lcd);
   }
   
   void showInfo(LiquidCrystal_I2C *lcd, bool showName) override {
     lcd->setCursor(13, 0);
     lcd->print(getWaveTypeName());
-    genX::showInfo(lcd, showName);
-    if (!showName) {
-      lcd->print("       ");
-    }
+    genBase::showInfo(lcd, showName);
   }
 
   // SINE_WAVE, TRIANGLE_WAVE, SQUARE_WAVE, or HALF_SQUARE_WAVE
@@ -92,16 +106,6 @@ public:
       case HALF_SQUARE_WAVE: return "SQ2";
     }
     return "???";
-  }
-  
-  void change_freq(short dir) override {
-    genX::change_freq(dir);
-    if (freq < 1) {
-      freq = 1;
-    } else if (freq > 12000000) {
-      if (dir < 0) freq = 1;
-      else freq = 12000000;
-    }
   }
 
   char* name() override {

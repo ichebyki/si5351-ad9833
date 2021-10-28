@@ -2,9 +2,9 @@
 #define GEN_SI5351_H
 
 #include <si5351.h>               // Etherkit https://github.com/etherkit/Si5351Arduino
-#include "genX.h"
+#include "genBase.h"
 
-class gen5351: public genX {
+class gen5351: public genBase {
 public:
   gen5351(uint8_t _i2c_addr = SI5351_BUS_BASE_ADDR) {
     i2c_addr = _i2c_addr;
@@ -29,22 +29,20 @@ public:
   }
 
   void showFreq(LiquidCrystal_I2C *lcd) override {
-    genX::showFreq(lcd);
+    genBase::showFreq(lcd);
   }
   
   void showInfo(LiquidCrystal_I2C *lcd, bool showName) override {
-    genX::showInfo(lcd, showName);
-    if (!showName) {
-      lcd->print("       ");
-    }
+    genBase::showInfo(lcd, showName);
   }
   
   void change_freq(short dir) override {
-    genX::change_freq(dir);
-    if (freq < 10000) freq = 10000;
-    else if (freq > 225000000) {
-      if (dir < 0) freq = 10000;
-      else freq = 225000000;
+    genBase::change_freq(dir);
+    
+    if (freq < 10000) {
+      freq = 10000;
+    } else if (freq > 225000000) {
+      freq = 225000000;
     }
   }
 

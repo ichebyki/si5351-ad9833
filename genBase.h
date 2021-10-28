@@ -4,9 +4,9 @@
 #include <Arduino.h> 
 #include <LiquidCrystal_I2C.h>    // by Frank de Brabander
 
-class genX {
+class genBase {
 public:
-  genX(uint8_t addr = 0) {};
+  genBase(uint8_t addr = 0) {};
 
   unsigned long get_freq() {
     return freq;
@@ -16,7 +16,7 @@ public:
     return fstep;
   }
 
-  void increment_fstep(short dir = 1) {
+  virtual void change_fstep(short dir = 1) {
     if (dir > 0) {
       if (fstep == 10000000) {
           fstep = 1;
@@ -40,7 +40,9 @@ public:
     if (dir == 1) {
       freq = freq + fstep;
     } else if (dir == -1) {
-      freq = freq - fstep;
+      if (freq > fstep) {
+        freq = freq - fstep;
+      }
     }
   }
   
@@ -70,12 +72,11 @@ public:
     unsigned int h = frq % 1000;
   
     lcd->setCursor(0, 0);
-    //lcd->print("F: ");
-    char buffer[15] = "";
+    char buffer[19] = "";
     if (m < 1) {
-      sprintf(buffer, "%d.%003d", k, h);
+      sprintf(buffer, "%d.%003d%10s", k, h, "");
     } else {
-      sprintf(buffer, "%d.%003d.%003d", m, k, h);
+      sprintf(buffer, "%d.%003d.%003d%7s", m, k, h, "");
     }
     lcd->print(buffer);
   }
@@ -98,6 +99,7 @@ public:
         lcd->print(stp / 1000000);
         lcd->print(" MHz"); 
       }
+      lcd->print("       ");
     }
   }
 
