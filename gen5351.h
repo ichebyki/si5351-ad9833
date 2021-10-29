@@ -46,7 +46,7 @@ public:
     }
   }
 
-  char* name() override {
+  const char* name() override {
     return "si5331";
   }
   

@@ -6,7 +6,7 @@
 
 class genBase {
 public:
-  genBase(uint8_t addr = 0) {};
+  genBase() {};
 
   unsigned long get_freq() {
     return freq;
@@ -74,9 +74,9 @@ public:
     lcd->setCursor(0, 0);
     char buffer[19] = "";
     if (m < 1) {
-      sprintf(buffer, "%d.%003d%10s", k, h, "");
+      sprintf(buffer, "%d.%03d%10s", k, h, "");
     } else {
-      sprintf(buffer, "%d.%003d.%003d%7s", m, k, h, "");
+      sprintf(buffer, "%d.%03d.%03d%7s", m, k, h, "");
     }
     lcd->print(buffer);
   }
@@ -105,7 +105,7 @@ public:
 
   virtual void  init();
   virtual void  update();
-  virtual char* name();
+  virtual const char* name();
   virtual void  changeEnabled() { enabled = !enabled; }
   virtual bool  getEnabled() { return enabled; }
 

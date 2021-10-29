@@ -5,29 +5,11 @@
 
 //Libraries
 #include <Wire.h>                 // IDE Standard
-#include <EEPROM.h>
+//#include <EEPROM.h>
 #include <EncButton.h>            // https://github.com/GyverLibs/EncButton
 #include <LiquidCrystal_I2C.h>    // by Frank de Brabander
 #include "gen5351.h"
 #include "gen9833.h"
-
-//#define _CHECK_MEMORY_FREE_
-#ifdef _CHECK_MEMORY_FREE_
-  #define S(a) Serial.println(a)
-  int _memoryFree();
-  #define Serial_print_memoryFree { S(_memoryFree()); }
-#else
-  #define S(a) (void)0
-  #define Serial_print_memoryFree (void)0 // disable memory free
-#endif
-
-void ClickF();
-void RightF();
-void LeftF();
-void RightHoldF();
-void LeftHoldF();
-void HoldedF();
-void DoubleClickF();
 
 //-----------------------------------------------------------------------------
 #define ENCCCW     2 // DIR_CCW pin
@@ -96,8 +78,6 @@ void loop() {
     tick2name = !tick2name;
     tick2mill = millis();
     g->showInfo(lcd, tick2name);
-    
-    Serial_print_memoryFree;
   }
 }
 

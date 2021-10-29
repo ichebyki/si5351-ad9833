@@ -3,54 +3,54 @@
 
 #define FSYNC_PIN 7 			 // Define FSYNC_PIN for fast digital writes
 #define FNC_PIN FSYNC_PIN	 // Define FNC_PIN for fast digital writes
-#include <AD9833.h>        // https://github.com/Billwilliams1952/AD9833-Library-Arduino 
+#include <MD_AD9833.h>     
 #include "genBase.h"
 
 class gen9833: public genBase {
 public:
+
+  enum WaveType
+  {
+    SINE,      ///< Set output to a sine wave at selected frequency
+    SQUARE1,   ///< Set output to a square wave at selected frequency
+    SQUARE2,   ///< Set output to a square wave at half selected frequency
+    TRIANGLE,  ///< Set output to a triangle wave at selected frequency
+  };
+
   gen9833(uint8_t _FNCpin = FSYNC_PIN, uint32_t _referenceFrequency = 25000000UL) {
     FNCpin = _FNCpin;
     referenceFrequency = _referenceFrequency;
+    mode = MD_AD9833::MODE_SINE;
   }
 
   void init() {
-    ad9833 = new AD9833(FNCpin, referenceFrequency);
+    ad9833 = new MD_AD9833(FNCpin);
     
     // This MUST be the first command after declaring the AD9833 object
-    ad9833->Begin();              
-
-    // Apply a 1000 Hz sine wave using REG0 (register set 0). There are two register sets,
-    // REG0 and REG1. 
-    // Each one can be programmed for:
-    //   Signal type - SINE_WAVE, TRIANGLE_WAVE, SQUARE_WAVE, and HALF_SQUARE_WAVE
-    //   Frequency - 0 to 12.5 MHz
-    //   Phase - 0 to 360 degress (this is only useful if it is 'relative' to some other signal
-    //           such as the phase difference between REG0 and REG1).
-    // In ApplySignal, if Phase is not given, it defaults to 0.
-    ad9833->ApplySignal(waveType,
-                        freqReg,
-                        (float)freq);
-   
-    ad9833->EnableOutput(true);   // Turn ON the output - it defaults to OFF
-    // There should be a 1000 Hz sine wave on the output of the AD9833
+    ad9833->begin();
+    
+    ad9833->setFrequency(MD_AD9833::CHAN_0, (float)freq);
+    ad9833->setFrequency(MD_AD9833::CHAN_1, (float)freq);
+    ad9833->setMode(MD_AD9833::MODE_SINE);
+    ad9833->setPhase(MD_AD9833::CHAN_0, 0);
+    ad9833->setPhase(MD_AD9833::CHAN_1, 0);
+    ad9833->setActiveFrequency(MD_AD9833::CHAN_0);
+    ad9833->setActivePhase(MD_AD9833::CHAN_0);
   }
 
   void changeEnabled() override {
     genBase::changeEnabled();
-    ad9833->EnableOutput(enabled);
+    ad9833->setMode(enabled ? mode : MD_AD9833::MODE_OFF);
   }
 
   void update() {
-    // Setup and apply a signal. Note that any calls to EnableOut,
-    // SleepMode, DisableDAC, or DisableInternalClock remain in effect
-    // void ApplySignal ( WaveformType waveType,
-    //                    Registers freqReg,
-    //                    float frequencyInHz,
-    //                    Registers phaseReg = SAME_AS_REG0,
-    //                    float phaseInDeg = 0.0 ); 
-    ad9833->ApplySignal(waveType,
-                        freqReg,
-                        (float)freq);
+    ad9833->setFrequency(MD_AD9833::CHAN_0, (float)freq);
+    ad9833->setFrequency(MD_AD9833::CHAN_1, (float)freq);
+    ad9833->setMode(enabled ? mode : MD_AD9833::MODE_OFF);
+    ad9833->setPhase(MD_AD9833::CHAN_0, 0);
+    ad9833->setPhase(MD_AD9833::CHAN_1, 0);
+    ad9833->setActiveFrequency(MD_AD9833::CHAN_0);
+    ad9833->setActivePhase(MD_AD9833::CHAN_0);
   }
 
   void change_fstep(short dir = 1) override {
@@ -86,48 +86,58 @@ public:
   }
 
   // SINE_WAVE, TRIANGLE_WAVE, SQUARE_WAVE, or HALF_SQUARE_WAVE
-  void setWaveType(WaveformType _waveType) {
-    waveType = _waveType;
+  void setWaveType(WaveType _waveType) {
+    switch (_waveType) {
+    case SINE: mode = MD_AD9833::MODE_SINE; break;
+    case SQUARE1: mode = MD_AD9833::MODE_SQUARE1; break;
+    case SQUARE2: mode = MD_AD9833::MODE_SQUARE2; break;
+    case TRIANGLE: mode = MD_AD9833::MODE_TRIANGLE; break;
+    }
+    ad9833->setMode(enabled ? mode : MD_AD9833::MODE_OFF);
   }
 
   void cycleWaveType() {
-    if (waveType == SINE_WAVE) {
-      waveType = TRIANGLE_WAVE;
-    } else if (waveType == TRIANGLE_WAVE) {
-      waveType = SQUARE_WAVE;
-    } else if (waveType == SQUARE_WAVE) {
-      waveType = HALF_SQUARE_WAVE;
+    if (mode == MD_AD9833::MODE_SINE) {
+      mode = MD_AD9833::MODE_TRIANGLE;
+    } else if (mode == MD_AD9833::MODE_TRIANGLE) {
+      mode = MD_AD9833::MODE_SQUARE1;
+    } else if (mode == MD_AD9833::MODE_SQUARE1) {
+      mode = MD_AD9833::MODE_SQUARE2;
     } else {
-      waveType = SINE_WAVE;
+      mode = MD_AD9833::MODE_SINE;
+    }
+    ad9833->setMode(enabled ? mode : MD_AD9833::MODE_OFF);
+  }
+    
+  WaveType getWaveType() {
+    switch (mode) {
+    case MD_AD9833::MODE_SINE: return(SINE);
+    case MD_AD9833::MODE_SQUARE1: return(SQUARE1);
+    case MD_AD9833::MODE_SQUARE2: return(SQUARE2);
+    case MD_AD9833::MODE_TRIANGLE: return(TRIANGLE);
+    default: return SINE;
     }
   }
     
-  WaveformType getWaveType() {
-    return waveType;
-  }
-    
-  char* getWaveTypeName() {
-    switch(waveType) {
-      case SINE_WAVE: return "SIN";
-      case TRIANGLE_WAVE: return "TRI";
-      case SQUARE_WAVE: return "SQ1";
-      case HALF_SQUARE_WAVE: return "SQ2";
+  const char* getWaveTypeName() {
+    switch(mode) {
+    case MD_AD9833::MODE_SINE: return("SIN");
+    case MD_AD9833::MODE_SQUARE1: return("SQ1");
+    case MD_AD9833::MODE_SQUARE2: return("SQ2");
+    case MD_AD9833::MODE_TRIANGLE: return("TRI");
+    default: return "???";
     }
-    return "???";
   }
 
-  char* name() override {
+  const char* name() override {
     return "ad9833";
   }
   
 private:
-  AD9833 *ad9833;
+  MD_AD9833 *ad9833;
   uint8_t FNCpin = FSYNC_PIN;
   uint32_t referenceFrequency = 25000000UL;
-  WaveformType waveType = SINE_WAVE;
-  Registers freqReg = REG0;
-  Registers phaseReg = SAME_AS_REG0;
-  float phaseInDeg = 0;
+  MD_AD9833::mode_t mode = MD_AD9833::MODE_SINE;
 };
 
 #endif // GEN_9833_H
