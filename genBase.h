@@ -103,14 +103,17 @@ public:
     }
   }
 
-  virtual void init();
-  virtual void update();
+  virtual void  init();
+  virtual void  update();
   virtual char* name();
+  virtual void  changeEnabled() { enabled = !enabled; }
+  virtual bool  getEnabled() { return enabled; }
 
 protected:
-  unsigned long freq = 10000000;
-  unsigned long freqPrev = 1000000;
-  unsigned long fstep = 1000000;
+  unsigned long freq = 100000;
+  unsigned long freqPrev = 100000;
+  unsigned long fstep = 100000;
+  bool enabled = true;
 };
 
 #endif // GEN_X_h

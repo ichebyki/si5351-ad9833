@@ -1,12 +1,14 @@
 #ifndef GEN_AD9833_H
 #define GEN_AD9833_H
 
-#include <AD9833.h>               // https://github.com/Billwilliams1952/AD9833-Library-Arduino 
+#define FSYNC_PIN 7 			 // Define FSYNC_PIN for fast digital writes
+#define FNC_PIN FSYNC_PIN	 // Define FNC_PIN for fast digital writes
+#include <AD9833.h>        // https://github.com/Billwilliams1952/AD9833-Library-Arduino 
 #include "genBase.h"
 
 class gen9833: public genBase {
 public:
-  gen9833(uint8_t _FNCpin, uint32_t _referenceFrequency = 25000000UL) {
+  gen9833(uint8_t _FNCpin = FSYNC_PIN, uint32_t _referenceFrequency = 25000000UL) {
     FNCpin = _FNCpin;
     referenceFrequency = _referenceFrequency;
   }
@@ -27,12 +29,15 @@ public:
     // In ApplySignal, if Phase is not given, it defaults to 0.
     ad9833->ApplySignal(waveType,
                         freqReg,
-                        freq,
-                        phaseReg,
-                        phaseInDeg);
+                        (float)freq);
    
     ad9833->EnableOutput(true);   // Turn ON the output - it defaults to OFF
     // There should be a 1000 Hz sine wave on the output of the AD9833
+  }
+
+  void changeEnabled() override {
+    genBase::changeEnabled();
+    ad9833->EnableOutput(enabled);
   }
 
   void update() {
@@ -45,9 +50,7 @@ public:
     //                    float phaseInDeg = 0.0 ); 
     ad9833->ApplySignal(waveType,
                         freqReg,
-                        freq,
-                        phaseReg,
-                        phaseInDeg);
+                        (float)freq);
   }
 
   void change_fstep(short dir = 1) override {
@@ -67,14 +70,19 @@ public:
     }
   }
 
+  void showWave(LiquidCrystal_I2C *lcd) {
+    lcd->setCursor(13, 0);
+    lcd->print(enabled ? getWaveTypeName() : "OFF");
+  }
+
   void showFreq(LiquidCrystal_I2C *lcd) override {
     genBase::showFreq(lcd);
+    showWave(lcd);
   }
   
   void showInfo(LiquidCrystal_I2C *lcd, bool showName) override {
-    lcd->setCursor(13, 0);
-    lcd->print(getWaveTypeName());
     genBase::showInfo(lcd, showName);
+    showWave(lcd);
   }
 
   // SINE_WAVE, TRIANGLE_WAVE, SQUARE_WAVE, or HALF_SQUARE_WAVE
@@ -114,7 +122,7 @@ public:
   
 private:
   AD9833 *ad9833;
-  uint8_t FNCpin = 7;
+  uint8_t FNCpin = FSYNC_PIN;
   uint32_t referenceFrequency = 25000000UL;
   WaveformType waveType = SINE_WAVE;
   Registers freqReg = REG0;

@@ -13,9 +13,11 @@
 
 //#define _CHECK_MEMORY_FREE_
 #ifdef _CHECK_MEMORY_FREE_
+  #define S(a) Serial.println(a)
   int _memoryFree();
-  #define Serial_print_memoryFree { Serial.print(_memoryFree()); Serial.print(" "); }
+  #define Serial_print_memoryFree { S(_memoryFree()); }
 #else
+  #define S(a) (void)0
   #define Serial_print_memoryFree (void)0 // disable memory free
 #endif
 
@@ -25,11 +27,13 @@ void LeftF();
 void RightHoldF();
 void LeftHoldF();
 void HoldedF();
+void DoubleClickF();
 
 //-----------------------------------------------------------------------------
-#define ENCCCW    2 // DIR_CCW pin
-#define ENCCW     3 // DIR_CW pin
-#define ENCBTN    4 // encoder push button
+#define ENCCCW     2 // DIR_CCW pin
+#define ENCCW      3 // DIR_CW pin
+#define ENCBTN     4 // encoder push button
+#define PIN_13   13
 
 //-----------------------------------------------------------------------------
 EncButton<EB_CALLBACK, ENCCCW, ENCCW, ENCBTN> enc;
@@ -49,6 +53,7 @@ unsigned long tick2mill = 0;
 unsigned long time_now = 0;  // millis display active
 
 void setup() {
+  pinMode(PIN_13, OUTPUT);
   Wire.begin();
 #ifdef _CHECK_MEMORY_FREE_
   Serial.begin(9600);
@@ -60,16 +65,18 @@ void setup() {
   g1 = new gen5351();
   g1->init();
 
-  g2 = new gen9833(7);
+  g2 = new gen9833(FSYNC_PIN);
   g2->init();
 
-  g = g1;
+  g = g2;
   g->welcome(lcd);
+  g2mode = true;
   
   enc.attach(CLICK_HANDLER, ClickF);
   enc.attach(TURN_HANDLER, turnF);
   enc.attach(TURN_H_HANDLER, turnHoldF);
   enc.attach(HOLDED_HANDLER, HoldedF);
+  enc.attachClicks(2, DoubleClickF);
 
   g->showFreq(lcd);
 }
@@ -103,8 +110,14 @@ void ClickF() {
   if (g2mode) {
     g2->cycleWaveType();
     g->showInfo(lcd, false);
+    g->update();
   }
 
+}
+
+void DoubleClickF() {
+  g->changeEnabled();
+  tick2reset();
 }
  
 void turnF() {
