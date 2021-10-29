@@ -1,7 +1,10 @@
 #ifndef GEN_AD9833_H
 #define GEN_AD9833_H
 
-#define FSYNC_PIN 7 			 // Define FSYNC_PIN for fast digital writes
+// Pins for SPI comm with the AD9833 IC
+#define FSYNC_PIN  10	// SPI Load pin number (FSYNC in AD9833 usage)
+#define DATA_PIN   11	// SPI Data pin number
+#define CLK_PIN    13	// SPI Clock pin number
 #define FNC_PIN FSYNC_PIN	 // Define FNC_PIN for fast digital writes
 #include <MD_AD9833.h>     
 #include "genBase.h"
@@ -17,14 +20,21 @@ public:
     TRIANGLE,  ///< Set output to a triangle wave at selected frequency
   };
 
-  gen9833(uint8_t _FNCpin = FSYNC_PIN, uint32_t _referenceFrequency = 25000000UL) {
+  gen9833(uint8_t _DATpin = DATA_PIN, 
+          uint8_t _CLKpin = CLK_PIN, 
+          uint8_t _FNCpin = FSYNC_PIN, 
+          uint32_t _referenceFrequency = 25000000UL)
+  {
     FNCpin = _FNCpin;
+    DATpin = _DATpin;
+    CLKpin = _CLKpin;
     referenceFrequency = _referenceFrequency;
     mode = MD_AD9833::MODE_SINE;
   }
 
   void init() {
-    ad9833 = new MD_AD9833(FNCpin);
+    ad9833 = new MD_AD9833(DATpin, CLKpin, FNCpin);
+    //ad9833 = new MD_AD9833(FNCpin);
     
     // This MUST be the first command after declaring the AD9833 object
     ad9833->begin();
@@ -136,6 +146,8 @@ public:
 private:
   MD_AD9833 *ad9833;
   uint8_t FNCpin = FSYNC_PIN;
+  uint8_t DATpin = DATA_PIN;
+  uint8_t CLKpin = CLK_PIN;
   uint32_t referenceFrequency = 25000000UL;
   MD_AD9833::mode_t mode = MD_AD9833::MODE_SINE;
 };

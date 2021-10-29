@@ -47,7 +47,7 @@ void setup() {
   g1 = new gen5351();
   g1->init();
 
-  g2 = new gen9833(FSYNC_PIN);
+  g2 = new gen9833(11, 13, 10);
   g2->init();
 
   g = g2;
