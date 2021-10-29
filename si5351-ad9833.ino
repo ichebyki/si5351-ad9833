@@ -5,21 +5,11 @@
 
 //Libraries
 #include <Wire.h>                 // IDE Standard
-#include <EEPROM.h>
+//#include <EEPROM.h>
 #include <EncButton.h>            // https://github.com/GyverLibs/EncButton
 #include <LiquidCrystal_I2C.h>    // by Frank de Brabander
 #include "gen5351.h"
 #include "gen9833.h"
-
-//#define _CHECK_MEMORY_FREE_
-#ifdef _CHECK_MEMORY_FREE_
-  #define S(a) Serial.println(a)
-  int _memoryFree();
-  #define Serial_print_memoryFree { S(_memoryFree()); }
-#else
-  #define S(a) (void)0
-  #define Serial_print_memoryFree (void)0 // disable memory free
-#endif
 
 void ClickF();
 void RightF();
@@ -53,9 +43,9 @@ unsigned long tick2mill = 0;
 unsigned long time_now = 0;  // millis display active
 
 void setup() {
-  pinMode(PIN_13, OUTPUT);
+  SPI.begin();
   Wire.begin();
-#ifdef _CHECK_MEMORY_FREE_
+#ifdef _S_
   Serial.begin(9600);
 #endif
 
@@ -68,9 +58,9 @@ void setup() {
   g2 = new gen9833(FSYNC_PIN);
   g2->init();
 
-  g = g2;
+  g = g1;
   g->welcome(lcd);
-  g2mode = true;
+  g2mode = false;
   
   enc.attach(CLICK_HANDLER, ClickF);
   enc.attach(TURN_HANDLER, turnF);
@@ -111,6 +101,7 @@ void ClickF() {
     g2->cycleWaveType();
     g->showInfo(lcd, false);
     g->update();
+    S("--- ClickF ---");
   }
 
 }

@@ -1,62 +1,67 @@
 #ifndef GEN_AD9833_H
 #define GEN_AD9833_H
 
-#define FSYNC_PIN 7 			 // Define FSYNC_PIN for fast digital writes
+#include <SPI.h>
+#define FSYNC_PIN 10 			 // Define FSYNC_PIN for fast digital writes
 #define FNC_PIN FSYNC_PIN	 // Define FNC_PIN for fast digital writes
-#include <AD9833.h>        // https://github.com/Billwilliams1952/AD9833-Library-Arduino 
 #include "genBase.h"
+
+// ********** AD9833 **********
+#define bMode 0x2
+#define bDiv2 0x8
+#define bOpbiten 0x20
+#define bSleep12 0x40
+#define bSleep1 0x80
+#define bReset 0x100
+#define bHLB 0x1000
+#define bB28 0x2000
+#define bCntrl_reg 0x0
+#define bFreq_reg0 0x4000
+#define bFreq_reg1 0x8000
+#define bPhase_reg 0xC000
+enum eWaveForm {wfSin, wfTri, wfSqr, wfSqr2};
 
 class gen9833: public genBase {
 public:
-  gen9833(uint8_t _FNCpin = FSYNC_PIN, uint32_t _referenceFrequency = 25000000UL) {
+  gen9833(short _FNCpin = FSYNC_PIN, uint32_t _referenceFrequency = 25000000UL) {
     FNCpin = _FNCpin;
     referenceFrequency = _referenceFrequency;
   }
 
   void init() {
-    ad9833 = new AD9833(FNCpin, referenceFrequency);
-    
-    // This MUST be the first command after declaring the AD9833 object
-    ad9833->Begin();              
-
-    // Apply a 1000 Hz sine wave using REG0 (register set 0). There are two register sets,
-    // REG0 and REG1. 
-    // Each one can be programmed for:
-    //   Signal type - SINE_WAVE, TRIANGLE_WAVE, SQUARE_WAVE, and HALF_SQUARE_WAVE
-    //   Frequency - 0 to 12.5 MHz
-    //   Phase - 0 to 360 degress (this is only useful if it is 'relative' to some other signal
-    //           such as the phase difference between REG0 and REG1).
-    // In ApplySignal, if Phase is not given, it defaults to 0.
-    ad9833->ApplySignal(waveType,
-                        freqReg,
-                        (float)freq);
-   
-    ad9833->EnableOutput(true);   // Turn ON the output - it defaults to OFF
-    // There should be a 1000 Hz sine wave on the output of the AD9833
+    WriteAD9833(bCntrl_reg | bReset | bB28);
+    SetFrequency(freq); // Установим частоту
+    SetForm(waveType);
+    SetPhase(0); // Сдвиг по фазе 0
+    WriteAD9833(bCntrl_reg | bB28); // Снимаем Reset
   }
 
   void changeEnabled() override {
     genBase::changeEnabled();
-    ad9833->EnableOutput(enabled);
+    if (enabled) {
+      WriteAD9833(bCntrl_reg | bB28);
+    } else {
+      WriteAD9833(bCntrl_reg | bReset | bB28);
+    }
   }
 
   void update() {
-    // Setup and apply a signal. Note that any calls to EnableOut,
-    // SleepMode, DisableDAC, or DisableInternalClock remain in effect
-    // void ApplySignal ( WaveformType waveType,
-    //                    Registers freqReg,
-    //                    float frequencyInHz,
-    //                    Registers phaseReg = SAME_AS_REG0,
-    //                    float phaseInDeg = 0.0 ); 
-    ad9833->ApplySignal(waveType,
-                        freqReg,
-                        (float)freq);
+    WriteAD9833(bCntrl_reg | bReset | bB28);
+    SetFrequency(freq);
+    SetForm(waveType);
+
+    SetPhase(0); // Сдвиг по фазе 0
+    WriteAD9833(bCntrl_reg | bB28); // Снимаем Reset
   }
 
   void change_fstep(short dir = 1) override {
     genBase::change_fstep(dir);
     if (fstep > 1000000) {
-      fstep = 1000000;
+      if (dir > 0) {
+        fstep = 1;
+      } else {
+        fstep = 1000000;
+      }
     }
   }
   
@@ -86,48 +91,99 @@ public:
   }
 
   // SINE_WAVE, TRIANGLE_WAVE, SQUARE_WAVE, or HALF_SQUARE_WAVE
-  void setWaveType(WaveformType _waveType) {
+  void setWaveType(eWaveForm _waveType) {
+    S("--- setWaveType ---");
     waveType = _waveType;
   }
 
   void cycleWaveType() {
-    if (waveType == SINE_WAVE) {
-      waveType = TRIANGLE_WAVE;
-    } else if (waveType == TRIANGLE_WAVE) {
-      waveType = SQUARE_WAVE;
-    } else if (waveType == SQUARE_WAVE) {
-      waveType = HALF_SQUARE_WAVE;
+    if (waveType == wfSin) {
+      waveType = wfTri;
+    } else if (waveType == wfTri) {
+      waveType = wfSqr;
+    } else if (waveType == wfSqr) {
+      waveType = wfSqr2;
     } else {
-      waveType = SINE_WAVE;
+      waveType = wfSin;
     }
+    S("--- cycleWaveType ---");
   }
     
-  WaveformType getWaveType() {
+  eWaveForm getWaveType() {
     return waveType;
   }
     
-  char* getWaveTypeName() {
+  const char* getWaveTypeName() {
     switch(waveType) {
-      case SINE_WAVE: return "SIN";
-      case TRIANGLE_WAVE: return "TRI";
-      case SQUARE_WAVE: return "SQ1";
-      case HALF_SQUARE_WAVE: return "SQ2";
+      case wfSin: return "SIN";
+      case wfTri: return "TRI";
+      case wfSqr: return "SQ1";
+      case wfSqr2: return "SQ2";
     }
     return "???";
   }
 
-  char* name() override {
+  const char* name() override {
     return "ad9833";
   }
   
 private:
-  AD9833 *ad9833;
   uint8_t FNCpin = FSYNC_PIN;
-  uint32_t referenceFrequency = 25000000UL;
-  WaveformType waveType = SINE_WAVE;
-  Registers freqReg = REG0;
-  Registers phaseReg = SAME_AS_REG0;
-  float phaseInDeg = 0;
+  unsigned long referenceFrequency = 25000000UL;
+  eWaveForm waveType = wfSin;
+  int freqReg = bFreq_reg0;
+  int phaseReg = bPhase_reg;
+  int phaseInDeg = 0;
+
+private:
+  // ******************** Установить частоту ********************
+  void SetFrequency(unsigned long val) {
+    freq = val;
+    unsigned long FreqData = round((float) val * 10.73741 + 0.5);
+    WriteAD9833((FreqData & 0x3FFF) | bFreq_reg0);
+    WriteAD9833((FreqData >> 14) | bFreq_reg0);
+  }
+
+  // ******************** Установить фазу ********************
+  void SetPhase(int val) {
+    phaseInDeg = val;
+    unsigned long PhaseData = round (float(val) * 11.37777 + 0.5);
+    WriteAD9833(PhaseData | bPhase_reg);
+  }
+
+  // ******************** Установить форму ********************
+  void SetForm(eWaveForm val) {
+    waveType = val;
+    int16_t CntrlData = 0;
+    switch (val) {
+      case wfSin:
+          CntrlData = 0;
+          break;
+      case wfTri:
+          CntrlData = bMode;
+          break;
+      case wfSqr:
+          CntrlData = bOpbiten | bDiv2 | bSleep12;
+          break;
+      case wfSqr2:
+          CntrlData = bOpbiten | bSleep12;
+          break;
+    }
+    WriteAD9833(CntrlData | bCntrl_reg | bB28);
+    S("--- SetForm ---");
+    S16("set wave = ", CntrlData);
+    S16(" / 0x", CntrlData | bCntrl_reg | bB28);
+  }
+
+  // ******************** Передача 16-битного слова в AD9833 ********************
+  void WriteAD9833(uint16_t Data) {
+    SPI.beginTransaction(SPISettings(SPI_CLOCK_DIV8, MSBFIRST, SPI_MODE2));
+    digitalWrite(FNCpin, LOW);
+    delayMicroseconds(1);
+    SPI.transfer16(Data);
+    digitalWrite(FNCpin, HIGH);
+    SPI.endTransaction();
+  }
 };
 
 #endif // GEN_9833_H

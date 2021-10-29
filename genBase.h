@@ -4,9 +4,26 @@
 #include <Arduino.h> 
 #include <LiquidCrystal_I2C.h>    // by Frank de Brabander
 
+#define _S_
+#ifdef _S_
+  #define S(a) Serial.println((a))
+  #define S16(a, b) Serial.print((a)); Serial.println((b), HEX)
+  
+  //#define _CHECK_MEMORY_FREE_
+  #ifdef _CHECK_MEMORY_FREE_
+    int _memoryFree();
+    #define Serial_print_memoryFree { S(_memoryFree()); }
+  #else
+    #define Serial_print_memoryFree (void)0 // disable memory free
+  #endif
+#else
+  #define S(a) (void)0
+  #define Serial_print_memoryFree (void)0 // disable memory free
+#endif
+
 class genBase {
 public:
-  genBase(uint8_t addr = 0) {};
+  genBase() {};
 
   unsigned long get_freq() {
     return freq;
@@ -74,9 +91,9 @@ public:
     lcd->setCursor(0, 0);
     char buffer[19] = "";
     if (m < 1) {
-      sprintf(buffer, "%d.%003d%10s", k, h, "");
+      sprintf(buffer, "%d.%03d%10s", k, h, "");
     } else {
-      sprintf(buffer, "%d.%003d.%003d%7s", m, k, h, "");
+      sprintf(buffer, "%d.%03d.%03d%7s", m, k, h, "");
     }
     lcd->print(buffer);
   }
@@ -105,7 +122,7 @@ public:
 
   virtual void  init();
   virtual void  update();
-  virtual char* name();
+  virtual const char* name();
   virtual void  changeEnabled() { enabled = !enabled; }
   virtual bool  getEnabled() { return enabled; }
 
