@@ -89,8 +89,7 @@ void tick2reset() {
 void ClickF() {
   if (g2mode) {
     g2->cycleWaveType();
-    g->showInfo(lcd, false);
-    g->update();
+    tick2reset();
   }
 
 }
@@ -102,14 +101,11 @@ void DoubleClickF() {
  
 void turnF() {
   g->change_freq(enc.getDir());
-  tick2reset();
 }
 
 void turnHoldF() {
-  time_now = (millis() + 100);
   g->change_fstep(enc.getDir());
   tick2reset();
-  delay(100);
 }
 
 void HoldedF() {

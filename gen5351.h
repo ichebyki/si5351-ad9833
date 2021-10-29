@@ -19,10 +19,14 @@ public:
     si5351->output_enable(SI5351_CLK2, 0);
     si5351->drive_strength(SI5351_CLK0, SI5351_DRIVE_2MA);  //Output current 2MA, 4MA, 6MA or 8MA
 
-    update();
+    updateAll();
   }
 
-  void update() {
+  void updateAll() {
+    updateFreq();
+  }
+
+  void updateFreq() {
     si5351->set_freq_manual((freq + (interfreq * 1000ULL)) * 100ULL,
                             pll_freq,
                             SI5351_CLK0);

@@ -48,7 +48,7 @@ public:
   
   bool check_and_update() {
     if (freqPrev != freq) {
-      update();
+      updateFreq();
       freqPrev = freq;
       return true;
     }
@@ -104,7 +104,8 @@ public:
   }
 
   virtual void  init();
-  virtual void  update();
+  virtual void  updateAll();
+  virtual void  updateFreq();
   virtual const char* name();
   virtual void  changeEnabled() { enabled = !enabled; }
   virtual bool  getEnabled() { return enabled; }

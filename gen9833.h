@@ -5,7 +5,6 @@
 #define FSYNC_PIN  10	// SPI Load pin number (FSYNC in AD9833 usage)
 #define DATA_PIN   11	// SPI Data pin number
 #define CLK_PIN    13	// SPI Clock pin number
-#define FNC_PIN FSYNC_PIN	 // Define FNC_PIN for fast digital writes
 #include <MD_AD9833.h>     
 #include "genBase.h"
 
@@ -33,19 +32,12 @@ public:
   }
 
   void init() {
-    ad9833 = new MD_AD9833(DATpin, CLKpin, FNCpin);
-    //ad9833 = new MD_AD9833(FNCpin);
+    //ad9833 = new MD_AD9833(DATpin, CLKpin, FNCpin);
+    ad9833 = new MD_AD9833(FNCpin);
     
     // This MUST be the first command after declaring the AD9833 object
     ad9833->begin();
-    
-    ad9833->setFrequency(MD_AD9833::CHAN_0, (float)freq);
-    ad9833->setFrequency(MD_AD9833::CHAN_1, (float)freq);
-    ad9833->setMode(MD_AD9833::MODE_SINE);
-    ad9833->setPhase(MD_AD9833::CHAN_0, 0);
-    ad9833->setPhase(MD_AD9833::CHAN_1, 0);
-    ad9833->setActiveFrequency(MD_AD9833::CHAN_0);
-    ad9833->setActivePhase(MD_AD9833::CHAN_0);
+    updateAll();
   }
 
   void changeEnabled() override {
@@ -53,7 +45,7 @@ public:
     ad9833->setMode(enabled ? mode : MD_AD9833::MODE_OFF);
   }
 
-  void update() {
+  void updateAll() {
     ad9833->setFrequency(MD_AD9833::CHAN_0, (float)freq);
     ad9833->setFrequency(MD_AD9833::CHAN_1, (float)freq);
     ad9833->setMode(enabled ? mode : MD_AD9833::MODE_OFF);
@@ -61,6 +53,10 @@ public:
     ad9833->setPhase(MD_AD9833::CHAN_1, 0);
     ad9833->setActiveFrequency(MD_AD9833::CHAN_0);
     ad9833->setActivePhase(MD_AD9833::CHAN_0);
+  }
+
+  void updateFreq() {
+    ad9833->setFrequency(MD_AD9833::CHAN_0, (float)freq);
   }
 
   void change_fstep(short dir = 1) override {
