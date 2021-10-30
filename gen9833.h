@@ -2,7 +2,7 @@
 #define GEN_AD9833_H
 
 // Pins for SPI comm with the AD9833 IC
-#define FSYNC_PIN  10	// SPI Load pin number (FSYNC in AD9833 usage)
+#define FSYNC_PIN  7	// SPI Load pin number (FSYNC in AD9833 usage)
 #define DATA_PIN   11	// SPI Data pin number
 #define CLK_PIN    13	// SPI Clock pin number
 #include <MD_AD9833.h>     
@@ -37,7 +37,7 @@ public:
     
     // This MUST be the first command after declaring the AD9833 object
     ad9833->begin();
-    updateAll();
+    update();
   }
 
   void changeEnabled() override {
@@ -45,12 +45,15 @@ public:
     ad9833->setMode(enabled ? mode : MD_AD9833::MODE_OFF);
   }
 
-  void updateAll() {
+  void update() {
+    ad9833->reset(true);              // Reset and hold
     ad9833->setFrequency(MD_AD9833::CHAN_0, (float)freq);
     ad9833->setFrequency(MD_AD9833::CHAN_1, (float)freq);
-    ad9833->setMode(enabled ? mode : MD_AD9833::MODE_OFF);
     ad9833->setPhase(MD_AD9833::CHAN_0, 0);
     ad9833->setPhase(MD_AD9833::CHAN_1, 0);
+    ad9833->reset();                  // full transition
+    
+    ad9833->setMode(enabled ? mode : MD_AD9833::MODE_OFF);
     ad9833->setActiveFrequency(MD_AD9833::CHAN_0);
     ad9833->setActivePhase(MD_AD9833::CHAN_0);
   }
@@ -99,7 +102,6 @@ public:
     case SQUARE2: mode = MD_AD9833::MODE_SQUARE2; break;
     case TRIANGLE: mode = MD_AD9833::MODE_TRIANGLE; break;
     }
-    ad9833->setMode(enabled ? mode : MD_AD9833::MODE_OFF);
   }
 
   void cycleWaveType() {
@@ -112,7 +114,6 @@ public:
     } else {
       mode = MD_AD9833::MODE_SINE;
     }
-    ad9833->setMode(enabled ? mode : MD_AD9833::MODE_OFF);
   }
     
   WaveType getWaveType() {

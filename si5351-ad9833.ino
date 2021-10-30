@@ -15,7 +15,6 @@
 #define ENCCCW     2 // DIR_CCW pin
 #define ENCCW      3 // DIR_CW pin
 #define ENCBTN     4 // encoder push button
-#define PIN_13   13
 
 //-----------------------------------------------------------------------------
 EncButton<EB_CALLBACK, ENCCCW, ENCCW, ENCBTN> enc;
@@ -34,8 +33,14 @@ unsigned long tick2mill = 0;
 #define PERIOD 100      // millis display active
 unsigned long time_now = 0;  // millis display active
 
+bool update = true;
+bool welcome = true;
+
 void setup() {
-  pinMode(PIN_13, OUTPUT);
+  pinMode(CLK_PIN, OUTPUT);
+  pinMode(DATA_PIN, OUTPUT);
+  pinMode(FSYNC_PIN, OUTPUT);
+
   Wire.begin();
 #ifdef _CHECK_MEMORY_FREE_
   Serial.begin(9600);
@@ -47,27 +52,35 @@ void setup() {
   g1 = new gen5351();
   g1->init();
 
-  g2 = new gen9833(11, 13, 10);
+  g2 = new gen9833(/*DATA_PIN, CLK_PIN, FSYNC_PIN*/);
   g2->init();
 
   g = g2;
-  g->welcome(lcd);
   g2mode = true;
+  update = true;
+  welcome = true;
   
   enc.attach(CLICK_HANDLER, ClickF);
   enc.attach(TURN_HANDLER, turnF);
   enc.attach(TURN_H_HANDLER, turnHoldF);
   enc.attach(HOLDED_HANDLER, HoldedF);
   enc.attachClicks(2, DoubleClickF);
-
-  g->showFreq(lcd);
 }
 
 void loop() {
   enc.tick();
  
-  if (g->check_and_update()) {
+  if (welcome) {
+    g->welcome(lcd);
     time_now = millis();
+    welcome = false;
+  }
+ 
+  if (update) {
+    g->update();
+    time_now = millis();
+    tick2reset();
+    update = false;
   }
 
   if ((time_now + PERIOD) > millis()) {
@@ -89,7 +102,7 @@ void tick2reset() {
 void ClickF() {
   if (g2mode) {
     g2->cycleWaveType();
-    tick2reset();
+    update = true;
   }
 
 }
@@ -97,10 +110,12 @@ void ClickF() {
 void DoubleClickF() {
   g->changeEnabled();
   tick2reset();
+  update = true;
 }
  
 void turnF() {
   g->change_freq(enc.getDir());
+  update = true;
 }
 
 void turnHoldF() {
@@ -115,8 +130,8 @@ void HoldedF() {
   } else {
     g = g1;
   }
-  g->welcome(lcd);
-  g->showFreq(lcd);
+  welcome = true;
+  update = true;
   tick2reset();
 }
 

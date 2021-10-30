@@ -45,15 +45,6 @@ public:
       }
     }
   }
-  
-  bool check_and_update() {
-    if (freqPrev != freq) {
-      updateFreq();
-      freqPrev = freq;
-      return true;
-    }
-    return false;
-  }
 
   void welcome(LiquidCrystal_I2C *lcd) {
     lcd->clear();
@@ -104,7 +95,7 @@ public:
   }
 
   virtual void  init();
-  virtual void  updateAll();
+  virtual void  update();
   virtual void  updateFreq();
   virtual const char* name();
   virtual void  changeEnabled() { enabled = !enabled; }
@@ -112,7 +103,6 @@ public:
 
 protected:
   unsigned long freq = 100000;
-  unsigned long freqPrev = 100000;
   unsigned long fstep = 100000;
   bool enabled = true;
 };
