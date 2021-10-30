@@ -2,9 +2,10 @@
 #define GEN_AD9833_H
 
 // Pins for SPI comm with the AD9833 IC
-#define FSYNC_PIN  7	// SPI Load pin number (FSYNC in AD9833 usage)
-#define DATA_PIN   11	// SPI Data pin number
-#define CLK_PIN    13	// SPI Clock pin number
+#define FSYNC_PIN  7    // SPI Load pin number (FSYNC in AD9833 usage)
+#define DATA_PIN   9    //11	// SPI Data pin number
+#define CLK_PIN    8    //13	// SPI Clock pin number
+
 #include <MD_AD9833.h>     
 #include "genBase.h"
 
@@ -32,8 +33,8 @@ public:
   }
 
   void init() {
-    //ad9833 = new MD_AD9833(DATpin, CLKpin, FNCpin);
-    ad9833 = new MD_AD9833(FNCpin);
+    ad9833 = new MD_AD9833(DATpin, CLKpin, FNCpin);
+    //ad9833 = new MD_AD9833(FNCpin);
     
     // This MUST be the first command after declaring the AD9833 object
     ad9833->begin();
