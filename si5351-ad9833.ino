@@ -33,8 +33,10 @@ unsigned long tick2mill = 0;
 #define PERIOD 100      // millis display active
 unsigned long time_now = 0;  // millis display active
 
-bool update = true;
 bool welcome = true;
+bool update = true;
+bool updateFreq = false;
+bool updateEnabled = false;
 
 void setup() {
   pinMode(CLK_PIN, OUTPUT);
@@ -57,8 +59,8 @@ void setup() {
 
   g = g2;
   g2mode = true;
-  update = true;
   welcome = true;
+  update = true;
   
   enc.attach(CLICK_HANDLER, ClickF);
   enc.attach(TURN_HANDLER, turnF);
@@ -81,6 +83,18 @@ void loop() {
     time_now = millis();
     tick2reset();
     update = false;
+  }
+ 
+  if (updateFreq) {
+    g->updateFreq();
+    time_now = millis();
+    updateFreq = false;
+  }
+ 
+  if (updateEnabled) {
+    g->updateEnabled();
+    time_now = millis();
+    updateEnabled = false;
   }
 
   if ((time_now + PERIOD) > millis()) {
@@ -110,12 +124,12 @@ void ClickF() {
 void DoubleClickF() {
   g->changeEnabled();
   tick2reset();
-  update = true;
+  updateEnabled = true;
 }
  
 void turnF() {
   g->change_freq(enc.getDir());
-  update = true;
+  updateFreq = true;
 }
 
 void turnHoldF() {

@@ -32,6 +32,14 @@ public:
                             SI5351_CLK0);
   }
 
+  void updateEnabled() {
+    if (enabled) {
+      si5351->output_enable(SI5351_CLK0, 1);                  //1 - Enable / 0 - Disable CLK
+    } else {
+      si5351->output_enable(SI5351_CLK0, 0);                  //1 - Enable / 0 - Disable CLK
+    }
+  }
+
   void showFreq(LiquidCrystal_I2C *lcd) override {
     genBase::showFreq(lcd);
   }

@@ -63,6 +63,10 @@ public:
     ad9833->setFrequency(MD_AD9833::CHAN_0, (float)freq);
   }
 
+  void updateEnabled() {
+    ad9833->setMode(enabled ? mode : MD_AD9833::MODE_OFF);
+  }
+
   void change_fstep(short dir = 1) override {
     genBase::change_fstep(dir);
     if (fstep > 1000000) {

@@ -97,6 +97,7 @@ public:
   virtual void  init();
   virtual void  update();
   virtual void  updateFreq();
+  virtual void updateEnabled();
   virtual const char* name();
   virtual void  changeEnabled() { enabled = !enabled; }
   virtual bool  getEnabled() { return enabled; }
