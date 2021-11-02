@@ -53,7 +53,6 @@ public:
     lcd->setCursor(0, 1);
     lcd->print("Version 1.0");
     delay(2000);
-    lcd->clear();
   }
 
   virtual void showFreq(LiquidCrystal_I2C *lcd) {

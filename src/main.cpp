@@ -11,13 +11,16 @@
 #include "gen5351.h"
 #include "gen9833.h"
 
+#define _SERIAL_LOG_
+
 //-----------------------------------------------------------------------------
 #define ENCCCW     2 // DIR_CCW pin
 #define ENCCW      3 // DIR_CW pin
 #define ENCBTN     4 // encoder push button
 
 //-----------------------------------------------------------------------------
-EncButton<EB_CALLBACK, ENCCCW, ENCCW, ENCBTN> enc;
+//EncButton<EB_CALLBACK, ENCCCW, ENCCW, ENCBTN> enc;
+EncButton<EB_TICK, ENCCCW, ENCCW, ENCBTN> enc;
 LiquidCrystal_I2C *lcd = new LiquidCrystal_I2C(0x27, 16, 2);
 
 gen5351 *g1;
@@ -39,7 +42,6 @@ bool updateFreq = false;
 bool updateEnabled = false;
 
 void ClickF();
-void turnHoldF();
 void HoldedF();
 void DoubleClickF();
 
@@ -48,14 +50,14 @@ void tick2reset() {
     tick2name = true;
 }
 
-    void setup()
+void setup()
 {
     pinMode(CLK_PIN, OUTPUT);
     pinMode(DATA_PIN, OUTPUT);
     pinMode(FSYNC_PIN, OUTPUT);
 
     Wire.begin();
-#ifdef _CHECK_MEMORY_FREE_
+#ifdef _SERIAL_LOG_
   Serial.begin(9600);
 #endif
 
@@ -74,7 +76,6 @@ void tick2reset() {
   update = true;
   
   enc.attach(CLICK_HANDLER, ClickF);
-  enc.attach(TURN_H_HANDLER, turnHoldF);
   enc.attach(HOLDED_HANDLER, HoldedF);
   enc.attachClicks(2, DoubleClickF);
 }
@@ -94,32 +95,60 @@ void loop()
     // опрос этих событий можно проводить в условии,
     // чтобы "не тратить время" на постоянный опрос в loop
     if (enc.tick()) {
-        if (enc.turn()) {
+        if (enc.turn())
+        {
+#ifdef _SERIAL_LOG_
+            Serial.println("turn");
+#endif
             g->change_freq(enc.getDir());
-            updateFreq = true;
             g->updateFreq();
             time_now = millis();
             updateFreq = false;
+        }
+        else if (enc.turnH()) { // "нажатый поворот"
+#ifdef _SERIAL_LOG_
+            Serial.println("hold + turn");
+
+            // можно опросить ещё:
+            //Serial.println(enc.counter);  // вывести счётчик
+            //Serial.println(enc.fast());   // проверить быстрый поворот
+            Serial.println(enc.getDir()); // направление поворота
+#endif
+
+            g->change_fstep(enc.getDir());
+            tick2reset();
         }
 
         // в конце лучше вызвать resetState(), чтобы сбросить необработанные флаги!
         enc.resetState();
     }
 
-    if (welcome) {
+    if (welcome)
+    {
+#ifdef _SERIAL_LOG_
+        Serial.println("welcome");
+#endif
         g->welcome(lcd);
         time_now = millis();
         welcome = false;
     }
-    
-    if (update) {
+
+    if (update)
+    {
+#ifdef _SERIAL_LOG_
+        Serial.println("update");
+#endif
         g->update();
         time_now = millis();
         tick2reset();
         update = false;
     }
-    
-    if (updateEnabled) {
+
+    if (updateEnabled)
+    {
+#ifdef _SERIAL_LOG_
+        Serial.println("updateEnabled");
+#endif
         g->updateEnabled();
         time_now = millis();
         updateEnabled = false;
@@ -148,11 +177,6 @@ void DoubleClickF() {
   g->changeEnabled();
   tick2reset();
   updateEnabled = true;
-}
-
-void turnHoldF() {
-  g->change_fstep(enc.getDir());
-  tick2reset();
 }
 
 void HoldedF() {
