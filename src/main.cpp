@@ -38,12 +38,23 @@ bool update = true;
 bool updateFreq = false;
 bool updateEnabled = false;
 
-void setup() {
-  pinMode(CLK_PIN, OUTPUT);
-  pinMode(DATA_PIN, OUTPUT);
-  pinMode(FSYNC_PIN, OUTPUT);
+void ClickF();
+void turnHoldF();
+void HoldedF();
+void DoubleClickF();
 
-  Wire.begin();
+void tick2reset() {
+    tick2mill = 0;
+    tick2name = true;
+}
+
+    void setup()
+{
+    pinMode(CLK_PIN, OUTPUT);
+    pinMode(DATA_PIN, OUTPUT);
+    pinMode(FSYNC_PIN, OUTPUT);
+
+    Wire.begin();
 #ifdef _CHECK_MEMORY_FREE_
   Serial.begin(9600);
 #endif
@@ -63,54 +74,66 @@ void setup() {
   update = true;
   
   enc.attach(CLICK_HANDLER, ClickF);
-  enc.attach(TURN_HANDLER, turnF);
   enc.attach(TURN_H_HANDLER, turnHoldF);
   enc.attach(HOLDED_HANDLER, HoldedF);
   enc.attachClicks(2, DoubleClickF);
 }
 
-void loop() {
-  enc.tick();
- 
-  if (welcome) {
-    g->welcome(lcd);
-    time_now = millis();
-    welcome = false;
-  }
- 
-  if (update) {
-    g->update();
-    time_now = millis();
-    tick2reset();
-    update = false;
-  }
- 
-  if (updateFreq) {
-    g->updateFreq();
-    time_now = millis();
-    updateFreq = false;
-  }
- 
-  if (updateEnabled) {
-    g->updateEnabled();
-    time_now = millis();
-    updateEnabled = false;
-  }
+void loop()
+{
+    // тик вернёт отличное от нуля значение, если произошло событие:
+    // 1 - left + turn
+    // 2 - right + turn
+    // 3 - leftH + turnH
+    // 4 - rightH + turnH
+    // 5 - click
+    // 6 - held
+    // 7 - step
+    // 8 - press
 
-  if ((time_now + PERIOD) > millis()) {
-    g->showFreq(lcd);
-  }
+    // опрос этих событий можно проводить в условии,
+    // чтобы "не тратить время" на постоянный опрос в loop
+    if (enc.tick()) {
+        if (enc.turn()) {
+            g->change_freq(enc.getDir());
+            updateFreq = true;
+            g->updateFreq();
+            time_now = millis();
+            updateFreq = false;
+        }
 
-  if (tick2mill == 0 || (tick2mill + (tick2name?TICK2_NAME:TICK2_INFO)) < millis()) {
-    tick2name = !tick2name;
-    tick2mill = millis();
-    g->showInfo(lcd, tick2name);
-  }
-}
+        // в конце лучше вызвать resetState(), чтобы сбросить необработанные флаги!
+        enc.resetState();
+    }
 
-void tick2reset() {
-  tick2mill = 0;
-  tick2name = true;
+    if (welcome) {
+        g->welcome(lcd);
+        time_now = millis();
+        welcome = false;
+    }
+    
+    if (update) {
+        g->update();
+        time_now = millis();
+        tick2reset();
+        update = false;
+    }
+    
+    if (updateEnabled) {
+        g->updateEnabled();
+        time_now = millis();
+        updateEnabled = false;
+    }
+
+    if ((time_now + PERIOD) > millis()) {
+        g->showFreq(lcd);
+    }
+
+    if (tick2mill == 0 || (tick2mill + (tick2name?TICK2_NAME:TICK2_INFO)) < millis()) {
+        tick2name = !tick2name;
+        tick2mill = millis();
+        g->showInfo(lcd, tick2name);
+    }
 }
 
 void ClickF() {
@@ -125,11 +148,6 @@ void DoubleClickF() {
   g->changeEnabled();
   tick2reset();
   updateEnabled = true;
-}
- 
-void turnF() {
-  g->change_freq(enc.getDir());
-  updateFreq = true;
 }
 
 void turnHoldF() {
