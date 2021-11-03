@@ -11,7 +11,7 @@
 #include "gen5351.h"
 #include "gen9833.h"
 
-#define _SERIAL_LOG_
+//#define _SERIAL_LOG_
 
 //-----------------------------------------------------------------------------
 #define ENCCCW     2 // DIR_CCW pin
@@ -41,9 +41,6 @@ bool update = true;
 bool updateFreq = false;
 bool updateEnabled = false;
 
-void ClickF();
-void HoldedF();
-void DoubleClickF();
 
 void tick2reset() {
     tick2mill = 0;
@@ -74,10 +71,6 @@ void setup()
   g2mode = true;
   welcome = true;
   update = true;
-  
-  enc.attach(CLICK_HANDLER, ClickF);
-  enc.attach(HOLDED_HANDLER, HoldedF);
-  enc.attachClicks(2, DoubleClickF);
 }
 
 void loop()
@@ -95,39 +88,64 @@ void loop()
     // опрос этих событий можно проводить в условии,
     // чтобы "не тратить время" на постоянный опрос в loop
     if (enc.tick()) {
-        if (enc.turn())
+        if (enc.turn()) // обычный поворот
         {
-#ifdef _SERIAL_LOG_
-            Serial.println("turn");
-#endif
+            updateFreq = true;
             g->change_freq(enc.getDir());
             g->updateFreq();
             time_now = millis();
             updateFreq = false;
         }
-        else if (enc.turnH()) { // "нажатый поворот"
-#ifdef _SERIAL_LOG_
-            Serial.println("hold + turn");
-
-            // можно опросить ещё:
-            //Serial.println(enc.counter);  // вывести счётчик
-            //Serial.println(enc.fast());   // проверить быстрый поворот
-            Serial.println(enc.getDir()); // направление поворота
-#endif
-
+        else if (enc.turnH()) 
+        {
             g->change_fstep(enc.getDir());
             tick2reset();
         }
+        else if (enc.click())
+        {
+            if (enc.clicks == 1)
+            {
+                if (g2mode)
+                {
+                    update = true;
+                    g2->cycleWaveType();
+                    g->update();
+                    time_now = millis();
+                    tick2reset();
+                    update = false;
+                }
+            }
+            if (enc.clicks==2)
+            {
+                updateEnabled = true;
+                g->changeEnabled();
+                g->updateEnabled();
+                time_now = millis();
+                tick2reset();
+                updateEnabled = false;
+            }
+        }
+        else if (enc.held()) // однократно вернёт true при удержании
+        {
+            g2mode = !g2mode;
+            if (g2mode)
+            {
+                g = g2;
+            }
+            else
+            {
+                g = g1;
+            }
+            welcome = true;
+            update = true;
+        }
 
         // в конце лучше вызвать resetState(), чтобы сбросить необработанные флаги!
-        enc.resetState();
+        //enc.resetState();
     }
 
     if (welcome)
     {
-#ifdef _SERIAL_LOG_
-        Serial.println("welcome");
-#endif
         g->welcome(lcd);
         time_now = millis();
         welcome = false;
@@ -135,23 +153,10 @@ void loop()
 
     if (update)
     {
-#ifdef _SERIAL_LOG_
-        Serial.println("update");
-#endif
         g->update();
         time_now = millis();
         tick2reset();
         update = false;
-    }
-
-    if (updateEnabled)
-    {
-#ifdef _SERIAL_LOG_
-        Serial.println("updateEnabled");
-#endif
-        g->updateEnabled();
-        time_now = millis();
-        updateEnabled = false;
     }
 
     if ((time_now + PERIOD) > millis()) {
@@ -163,32 +168,6 @@ void loop()
         tick2mill = millis();
         g->showInfo(lcd, tick2name);
     }
-}
-
-void ClickF() {
-  if (g2mode) {
-    g2->cycleWaveType();
-    update = true;
-  }
-
-}
-
-void DoubleClickF() {
-  g->changeEnabled();
-  tick2reset();
-  updateEnabled = true;
-}
-
-void HoldedF() {
-  g2mode = !g2mode;
-  if (g2mode) {
-    g = g2;
-  } else {
-    g = g1;
-  }
-  welcome = true;
-  update = true;
-  tick2reset();
 }
 
 // Переменные, создаваемые процессом сборки,

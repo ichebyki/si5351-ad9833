@@ -69,8 +69,13 @@ public:
 
   void change_fstep(short dir = 1) override {
     genBase::change_fstep(dir);
+    if (dir > 0) { 
+        if (fstep > 1000000) {
+            fstep = 1;
+        }
+    }
     if (fstep > 1000000) {
-      fstep = 1000000;
+        fstep = 1000000;
     }
   }
   
