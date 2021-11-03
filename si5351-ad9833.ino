@@ -29,7 +29,7 @@ LiquidCrystal_I2C *lcd = &_lcd;
 
 gen5351 _g1;
 genMenu _m1(lcd, 2);
-gen9833 _g2; //(/*DATA_PIN, CLK_PIN, FSYNC_PIN*/);
+gen9833 _g2;  //(/*DATA_PIN, CLK_PIN, FSYNC_PIN*/);
 genMenu _m2(lcd, 5);
 gen5351 *g1 = (gen5351 *)&_g1;
 genMenu *m1 = &_m1;
@@ -103,10 +103,13 @@ void loop() {
 
     // опрос этих событий можно проводить в условии,
     // чтобы "не тратить время" на постоянный опрос в loop
+#ifdef _SERIAL_LOG_
+    Serial.print("_memoryFree = ");
+    Serial.println(_memoryFree());
+#endif
     if (enc.tick()) {
         if (menumode) {
             if (enc.turn()) {  // --------------- обычный поворот
-                update = true;
                 if (g2mode) {
                     m2->cycleCurrent(enc.getDir());
                 } else {
@@ -114,17 +117,15 @@ void loop() {
                 }
                 tick2reset();
             } else if (enc.click()) {
+                if (g2mode) {
+                    g2->setWaveType(
+                        (gen9833::WaveType)m2->getCurrentItem()->val);
+                } else {
+                    g1->setEnabled(m1->getCurrentItem()->val == 1 ? true
+                                                                  : false);
+                }
                 menumode = false;
                 update = true;
-                if (g2mode) {
-                    g2->setWaveType((gen9833::WaveType)m2->getCurrentItem()->val);
-                } else {
-                    g1->setEnabled(m1->getCurrentItem()->val == 1 ? true : false);
-                }
-                g->update();
-                time_now = millis();
-                tick2reset();
-                update = false;
             }
         } else {
             if (enc.turn()) {  // --------------- обычный поворот
@@ -139,7 +140,8 @@ void loop() {
             } else if (enc.click()) {  // --------------- клик
                 menumode = true;
                 tick2reset();
-            } else if (enc.held()) {  // --------------- однократно вернёт true при удержании
+            } else if (enc.held()) {  // --------------- однократно вернёт true
+                                      // при удержании
                 g2mode = !g2mode;
                 if (g2mode) {
                     g = g2;
@@ -170,12 +172,13 @@ void loop() {
     }
 
     if (!menumode) {
-      if ((time_now + PERIOD) > millis()) {
-          g->showFreq(lcd);
-      }
+        if ((time_now + PERIOD) > millis()) {
+            g->showFreq(lcd);
+        }
     }
 
-    if (tick2mill == 0 || (tick2mill + (tick2name ? TICK2_NAME : TICK2_INFO)) < millis()) {
+    if (tick2mill == 0 ||
+        (tick2mill + (tick2name ? TICK2_NAME : TICK2_INFO)) < millis()) {
         tick2name = !tick2name;
         tick2mill = millis();
         if (menumode) {
