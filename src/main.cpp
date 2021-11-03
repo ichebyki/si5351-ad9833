@@ -106,7 +106,6 @@ void loop() {
     if (enc.tick()) {
         if (menumode) {
             if (enc.turn()) {  // --------------- обычный поворот
-                update = true;
                 if (g2mode) {
                     m2->cycleCurrent(enc.getDir());
                 } else {
@@ -114,8 +113,6 @@ void loop() {
                 }
                 tick2reset();
             } else if (enc.click()) {
-                menumode = false;
-                update = true;
                 if (g2mode) {
                     g2->setWaveType(
                         (gen9833::WaveType)m2->getCurrentItem()->val);
@@ -123,10 +120,8 @@ void loop() {
                     g1->setEnabled(m1->getCurrentItem()->val == 1 ? true
                                                                   : false);
                 }
-                g->update();
-                time_now = millis();
-                tick2reset();
-                update = false;
+                menumode = false;
+                update = true;
             }
         } else {
             if (enc.turn()) {  // --------------- обычный поворот
