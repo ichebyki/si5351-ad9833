@@ -93,18 +93,28 @@ public:
     }
   }
 
-  virtual void  init();
-  virtual void  update();
-  virtual void  updateFreq();
-  virtual void updateEnabled();
-  virtual const char* name();
-  virtual void  changeEnabled() { enabled = !enabled; }
-  virtual bool  getEnabled() { return enabled; }
+    void setEnabled(bool enable) { 
+        enabled = enable; 
+    }
+
+    bool getEnabled() { 
+        return enabled; 
+    }
+
+    void changeEnabled() {
+        enabled = !enabled;
+    }
+
+    virtual void  init();
+    virtual void  update();
+    virtual void  updateFreq();
+    virtual void updateEnabled();
+    virtual const char *name();
 
 protected:
-  unsigned long freq = 100000;
-  unsigned long fstep = 100000;
-  bool enabled = true;
+    unsigned long freq = 100000;
+    unsigned long fstep = 100000;
+    bool enabled = true;
 };
 
 #endif // GEN_X_h
