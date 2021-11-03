@@ -103,6 +103,10 @@ void loop() {
 
     // опрос этих событий можно проводить в условии,
     // чтобы "не тратить время" на постоянный опрос в loop
+#ifdef _SERIAL_LOG_
+    Serial.print("_memoryFree = ");
+    Serial.println(_memoryFree());
+#endif
     if (enc.tick()) {
         if (menumode) {
             if (enc.turn()) {  // --------------- обычный поворот

@@ -25,6 +25,7 @@ public:
 
   void update() {
     updateFreq();
+    updateEnabled();
   }
 
   void updateFreq() {
@@ -47,7 +48,7 @@ public:
 
     void showMode(LiquidCrystal_I2C *lcd) {
         lcd->setCursor(13, 0);
-        lcd->print(enabled ? " ON" : "OFF");
+        lcd->print(enabled ? "" : "OFF");
     }
   
   void showInfo(LiquidCrystal_I2C *lcd, bool showName) override {
