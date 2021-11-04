@@ -12,6 +12,7 @@ details. By J. CesarSound - ver 1.0 - Dec/2020.
 
 #include "gen5351.h"
 #include "gen9833.h"
+#include "genPWM.h"
 #include "genMenu.h"
 
 //#define _SERIAL_LOG_
@@ -27,16 +28,29 @@ EncButton<EB_TICK, ENCCCW, ENCCW, ENCBTN> enc;
 LiquidCrystal_I2C _lcd(0x27, 16, 2);
 LiquidCrystal_I2C *lcd = &_lcd;
 
-gen5351 _g1;
+gen5351 _g1(lcd);
 genMenu _m1(lcd, 2);
-gen9833 _g2;  //(/*DATA_PIN, CLK_PIN, FSYNC_PIN*/);
+
+gen9833 _g2(lcd);  //(/*DATA_PIN, CLK_PIN, FSYNC_PIN*/);
 genMenu _m2(lcd, 5);
+
+genPWM  _g3(lcd);
+genMenu _m3(lcd, 2);
+ 
 gen5351 *g1 = (gen5351 *)&_g1;
 genMenu *m1 = &_m1;
 gen9833 *g2 = (gen9833 *)&_g2;
 genMenu *m2 = &_m2;
-genBase *g = g1;
-bool g2mode = false;  // true if ad9833 is current
+genPWM  *g3 = (genPWM *)&_g3;
+genMenu *m3 = &_m3;
+
+genBase *g[3] = { g1, g2, g3 };
+genMenu *m[3] = { m1, m2, m3};
+short genCount = 3;
+short genCurrent = 0;  // true if ad9833 is current
+#define GEN_SI5351 0
+#define GEN_AD9833 1
+#define GEN_PWM    2
 
 bool tick2name = true;
 unsigned long tick2mill = 0;
@@ -72,13 +86,15 @@ void setup() {
     lcd->backlight();
 
     g1->init();
-
     g2->init();
+    g3->init();
 
-    g = g2;
-    g2mode = true;
+    genCurrent = 0;
     welcome = true;
     update = true;
+
+    m1->setItem(0, (short)1, "ON");
+    m1->setItem(1, (short)0, "OFF");
 
     m2->setItem(0, (short)gen9833::WaveType::SINE, "SIN");
     m2->setItem(1, (short)gen9833::WaveType::TRIANGLE, "TRI");
@@ -86,8 +102,8 @@ void setup() {
     m2->setItem(3, (short)gen9833::WaveType::SQUARE2, "SQ2");
     m2->setItem(4, (short)gen9833::WaveType::OFF, "OFF");
 
-    m1->setItem(0, (short)1, "ON");
-    m1->setItem(1, (short)0, "OFF");
+    m3->setItem(0, (short)1, "ON");
+    m3->setItem(1, (short)0, "OFF");
 }
 
 void loop() {
@@ -110,18 +126,23 @@ void loop() {
     if (enc.tick()) {
         if (menumode) {
             if (enc.turn()) {  // --------------- обычный поворот
-                if (g2mode) {
-                    m2->cycleCurrent(enc.getDir());
-                } else {
+                if (genCurrent == GEN_SI5351) {
                     m1->cycleCurrent(enc.getDir());
+                } else if (genCurrent == GEN_AD9833) {
+                    m2->cycleCurrent(enc.getDir());
+                } else if (genCurrent == GEN_PWM) {
+                    m3->cycleCurrent(enc.getDir());
                 }
                 tick2reset();
             } else if (enc.click()) {
-                if (g2mode) {
+                if (genCurrent == GEN_SI5351) {
+                    g1->setEnabled(m1->getCurrentItem()->val == 1 ? true
+                                                                  : false);
+                } else if (genCurrent == GEN_AD9833) {
                     g2->setWaveType(
                         (gen9833::WaveType)m2->getCurrentItem()->val);
-                } else {
-                    g1->setEnabled(m1->getCurrentItem()->val == 1 ? true
+                } else if (genCurrent == GEN_PWM) {
+                    g3->setEnabled(m1->getCurrentItem()->val == 1 ? true
                                                                   : false);
                 }
                 menumode = false;
@@ -130,24 +151,19 @@ void loop() {
         } else {
             if (enc.turn()) {  // --------------- обычный поворот
                 updateFreq = true;
-                g->change_freq(enc.getDir());
-                g->updateFreq();
+                g[genCurrent]->change_freq(enc.getDir());
+                g[genCurrent]->updateFreq();
                 time_now = millis();
                 updateFreq = false;
             } else if (enc.turnH()) {  // --------------- поворот с нажатием
-                g->change_fstep(enc.getDir());
+                g[genCurrent]->change_fstep(enc.getDir());
                 tick2reset();
             } else if (enc.click()) {  // --------------- клик
                 menumode = true;
                 tick2reset();
             } else if (enc.held()) {  // --------------- однократно вернёт true
                                       // при удержании
-                g2mode = !g2mode;
-                if (g2mode) {
-                    g = g2;
-                } else {
-                    g = g1;
-                }
+                genCurrent = genCurrent == (genCount - 1) ? 0 : genCurrent + 1;
                 welcome = true;
                 update = true;
             }
@@ -159,13 +175,13 @@ void loop() {
     }
 
     if (welcome) {
-        g->welcome(lcd);
+        g[genCurrent]->welcome();
         time_now = millis();
         welcome = false;
     }
 
     if (update) {
-        g->update();
+        g[genCurrent]->update();
         time_now = millis();
         tick2reset();
         update = false;
@@ -173,7 +189,7 @@ void loop() {
 
     if (!menumode) {
         if ((time_now + PERIOD) > millis()) {
-            g->showFreq(lcd);
+            g[genCurrent]->showFreq();
         }
     }
 
@@ -182,13 +198,9 @@ void loop() {
         tick2name = !tick2name;
         tick2mill = millis();
         if (menumode) {
-            if (g2mode) {
-                m2->show();
-            } else {
-                m1->show();
-            }
+            m[genCurrent]->show();
         } else {
-            g->showInfo(lcd, tick2name);
+            g[genCurrent]->showInfo(tick2name);
         }
     }
 }

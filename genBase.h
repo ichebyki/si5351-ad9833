@@ -6,7 +6,7 @@
 
 class genBase {
 public:
-  genBase() {};
+  genBase() { };
 
   unsigned long get_freq() {
     return freq;
@@ -46,16 +46,15 @@ public:
     }
   }
 
-  void welcome(LiquidCrystal_I2C *lcd) {
+  void welcome() {
     lcd->clear();
     lcd->print(name());
-    lcd->print(" Generator");
     lcd->setCursor(0, 1);
     lcd->print("Version 1.0");
     delay(2000);
   }
 
-  virtual void showFreq(LiquidCrystal_I2C *lcd) {
+  virtual void showFreq() {
     unsigned long frq = get_freq();
     unsigned int m = frq / 1000000;
     unsigned int k = (frq % 1000000) / 1000;
@@ -71,13 +70,15 @@ public:
     lcd->print(buffer);
   }
 
-  virtual void showInfo(LiquidCrystal_I2C *lcd, bool showName) {
-    lcd->setCursor(0, 1);
+  virtual void showInfo(bool showName) {
     if (showName) {
-      lcd->print("generator ");
+      lcd->setCursor(0, 1);
+      lcd->print("                ");
+      lcd->setCursor(0, 1);
       lcd->print(name());
     } else {
       unsigned long stp = get_fstep();
+      lcd->setCursor(0, 1);
       lcd->print("step ");
       if (stp < 1000) {
         lcd->print(stp);
@@ -115,6 +116,7 @@ protected:
     unsigned long freq = 100000;
     unsigned long fstep = 100000;
     bool enabled = true;
+    LiquidCrystal_I2C *lcd;
 };
 
 #endif // GEN_X_h

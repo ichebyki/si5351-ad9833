@@ -19,9 +19,10 @@ public:
         OFF
     };
 
-    gen9833(uint8_t _DATpin = DATA_PIN, uint8_t _CLKpin = CLK_PIN,
+    gen9833(LiquidCrystal_I2C *lcd, uint8_t _DATpin = DATA_PIN, uint8_t _CLKpin = CLK_PIN,
             uint8_t _FNCpin = FSYNC_PIN,
             uint32_t _referenceFrequency = 25000000UL) {
+        this->lcd = lcd;
         FNCpin = _FNCpin;
         DATpin = _DATpin;
         CLKpin = _CLKpin;
@@ -81,19 +82,19 @@ public:
         }
     }
 
-    void showWave(LiquidCrystal_I2C *lcd) {
+    void showWave() {
         lcd->setCursor(13, 0);
         lcd->print(enabled ? getWaveTypeName() : "OFF");
     }
 
-    void showFreq(LiquidCrystal_I2C *lcd) override {
-        genBase::showFreq(lcd);
-        showWave(lcd);
+    void showFreq() override {
+        genBase::showFreq();
+        showWave();
     }
     
-    void showInfo(LiquidCrystal_I2C *lcd, bool showName) override {
-        genBase::showInfo(lcd, showName);
-        showWave(lcd);
+    void showInfo(bool showName) override {
+        genBase::showInfo(showName);
+        showWave();
     }
 
     // SINE_WAVE, TRIANGLE_WAVE, SQUARE_WAVE, or HALF_SQUARE_WAVE

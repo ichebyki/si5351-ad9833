@@ -7,8 +7,9 @@
 class gen5351: public genBase {
 public:
 
-  gen5351(uint8_t _i2c_addr = SI5351_BUS_BASE_ADDR) {
-    i2c_addr = _i2c_addr;
+  gen5351(LiquidCrystal_I2C *lcd, uint8_t _i2c_addr = SI5351_BUS_BASE_ADDR) {
+      this->lcd = lcd;
+      i2c_addr = _i2c_addr;
   }
 
   void init() {
@@ -42,18 +43,18 @@ public:
     }
   }
 
-  void showFreq(LiquidCrystal_I2C *lcd) override {
-    genBase::showFreq(lcd);
+  void showFreq() override {
+    genBase::showFreq();
   }
 
-    void showMode(LiquidCrystal_I2C *lcd) {
+    void showMode() {
         lcd->setCursor(13, 0);
         lcd->print(enabled ? "" : "OFF");
     }
   
-  void showInfo(LiquidCrystal_I2C *lcd, bool showName) override {
-    genBase::showInfo(lcd, showName);
-    showMode(lcd);
+  void showInfo(bool showName) override {
+    genBase::showInfo(showName);
+    showMode();
   }
   
   void change_freq(short dir) override {
