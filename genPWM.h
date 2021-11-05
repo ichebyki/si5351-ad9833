@@ -66,20 +66,17 @@ public:
         }
     }
 
-    void showWave() {
+    void showMode() {
     }
 
     void showFreq() override {
         genBase::showFreq();
-        showWave();
+        showMode();
     }
     
     void showInfo(bool showName) override {
         genBase::showInfo(showName);
-        showWave();
-    }
-
-    void cycleWaveType(short dir = 1) {
+        showMode();
     }
 
     const char* name() override {

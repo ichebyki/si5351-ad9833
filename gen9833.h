@@ -11,13 +11,6 @@
 
 class gen9833: public genBase {
 public:
-    enum WaveType {
-        SINE,      ///< Set output to a sine wave at selected frequency
-        TRIANGLE,  ///< Set output to a triangle wave at selected frequency
-        SQUARE1,   ///< Set output to a square wave at selected frequency
-        SQUARE2,   ///< Set output to a square wave at half selected frequency
-        OFF
-    };
 
     gen9833(LiquidCrystal_I2C *lcd, uint8_t _DATpin = DATA_PIN, uint8_t _CLKpin = CLK_PIN,
             uint8_t _FNCpin = FSYNC_PIN,
@@ -27,7 +20,7 @@ public:
         DATpin = _DATpin;
         CLKpin = _CLKpin;
         referenceFrequency = _referenceFrequency;
-        mode = MD_AD9833::MODE_SINE;
+        mode = SINE;
     }
 
     void init() {
@@ -46,8 +39,8 @@ public:
         ad9833->setPhase(MD_AD9833::CHAN_0, 0);
         ad9833->setPhase(MD_AD9833::CHAN_1, 0);
         ad9833->reset();                  // full transition
-        
-        ad9833->setMode(enabled ? mode : MD_AD9833::MODE_OFF);
+
+        ad9833->setMode(getModeAD9833());
         ad9833->setActiveFrequency(MD_AD9833::CHAN_0);
         ad9833->setActivePhase(MD_AD9833::CHAN_0);
     }
@@ -56,9 +49,7 @@ public:
         ad9833->setFrequency(MD_AD9833::CHAN_0, (float)freq);
     }
 
-    void updateEnabled() {
-        ad9833->setMode(enabled ? mode : MD_AD9833::MODE_OFF);
-    }
+    void updateEnabled() { ad9833->setMode(getModeAD9833()); }
 
     void change_fstep(short dir = 1) override {
         genBase::change_fstep(dir);
@@ -82,76 +73,75 @@ public:
         }
     }
 
-    void showWave() {
+    void showMode() {
         lcd->setCursor(13, 0);
-        lcd->print(enabled ? getWaveTypeName() : "OFF");
+        lcd->print(enabled ? getModeName() : "OFF");
     }
 
     void showFreq() override {
         genBase::showFreq();
-        showWave();
+        showMode();
     }
     
     void showInfo(bool showName) override {
         genBase::showInfo(showName);
-        showWave();
+        showMode();
     }
 
     // SINE_WAVE, TRIANGLE_WAVE, SQUARE_WAVE, or HALF_SQUARE_WAVE
-    void setWaveType(WaveType _waveType) {
-        switch (_waveType) {
-        case SINE: mode = MD_AD9833::MODE_SINE; break;
-        case TRIANGLE: mode = MD_AD9833::MODE_TRIANGLE; break;
-        case SQUARE1: mode = MD_AD9833::MODE_SQUARE1; break;
-        case SQUARE2: mode = MD_AD9833::MODE_SQUARE2; break;
-        case OFF: mode = MD_AD9833::MODE_OFF; break;
-        }
-    }
+    void setMode(WaveType _waveType) override { mode = _waveType; }
 
-    void cycleWaveType(short dir = 1) {
+    void cycleMode(short dir = 1) override {
         if (dir > 0) {
-            if (mode == MD_AD9833::MODE_SINE) {
-                mode = MD_AD9833::MODE_TRIANGLE;
-            } else if (mode == MD_AD9833::MODE_TRIANGLE) {
-                mode = MD_AD9833::MODE_SQUARE1;
-            } else if (mode == MD_AD9833::MODE_SQUARE1) {
-                mode = MD_AD9833::MODE_SQUARE2;
+            if (mode == SINE) {
+                mode = TRIANGLE;
+            } else if (mode ==TRIANGLE) {
+                mode =SQUARE1;
+            } else if (mode ==SQUARE1) {
+                mode =SQUARE2;
             } else {
-                mode = MD_AD9833::MODE_SINE;
+                mode =SINE;
             }
         } else if (dir < 0) {
-            if (mode == MD_AD9833::MODE_SINE) {
-                mode = MD_AD9833::MODE_SQUARE2;
-            } else if (mode == MD_AD9833::MODE_TRIANGLE) {
-                mode = MD_AD9833::MODE_SINE;
-            } else if (mode == MD_AD9833::MODE_SQUARE1) {
-                mode = MD_AD9833::MODE_TRIANGLE;
+            if (mode ==SINE) {
+                mode =SQUARE2;
+            } else if (mode ==TRIANGLE) {
+                mode =SINE;
+            } else if (mode ==SQUARE1) {
+                mode =TRIANGLE;
             } else {
-                mode = MD_AD9833::MODE_SQUARE1;
+                mode =SQUARE1;
             }
         }
     }
 
-    WaveType getWaveType() {
+    WaveType getMode() override { return mode; }
+
+    const char* getModeName() override {
         switch (mode) {
-        case MD_AD9833::MODE_SINE: return(SINE);
-        case MD_AD9833::MODE_SQUARE1: return(SQUARE1);
-        case MD_AD9833::MODE_SQUARE2: return(SQUARE2);
-        case MD_AD9833::MODE_TRIANGLE: return(TRIANGLE);
-        case MD_AD9833::MODE_OFF: return(OFF);
-        default: return SINE;
+            case SINE:
+                return ("SIN");
+            case SQUARE1:
+                return ("SQ1");
+            case SQUARE2:
+                return ("SQ2");
+            case TRIANGLE:
+                return ("TRI");
+            case OFF:
+                return ("OFF");
         }
+        return "???";
     }
-        
-    const char* getWaveTypeName() {
-        switch(mode) {
-        case MD_AD9833::MODE_SINE: return("SIN");
-        case MD_AD9833::MODE_SQUARE1: return("SQ1");
-        case MD_AD9833::MODE_SQUARE2: return("SQ2");
-        case MD_AD9833::MODE_TRIANGLE: return("TRI");
-        case MD_AD9833::MODE_OFF: return("OFF");
-        default: return "???";
+
+    MD_AD9833::mode_t getModeAD9833() {
+        switch (mode) {
+            case SINE:      return (MD_AD9833::MODE_SINE);
+            case SQUARE1:   return (MD_AD9833::MODE_SQUARE1);
+            case SQUARE2:   return (MD_AD9833::MODE_SQUARE2);
+            case TRIANGLE:  return (MD_AD9833::MODE_TRIANGLE);
+            case OFF:       return (MD_AD9833::MODE_OFF);
         }
+        return MD_AD9833::MODE_OFF;
     }
 
     const char* name() override {
@@ -164,7 +154,6 @@ private:
     uint8_t DATpin = DATA_PIN;
     uint8_t CLKpin = CLK_PIN;
     uint32_t referenceFrequency = 25000000UL;
-    MD_AD9833::mode_t mode = MD_AD9833::MODE_SINE;
 };
 
 #endif // GEN_9833_H

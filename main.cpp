@@ -96,11 +96,11 @@ void setup() {
     m1->setItem(0, (short)1, "ON");
     m1->setItem(1, (short)0, "OFF");
 
-    m2->setItem(0, (short)gen9833::WaveType::SINE, "SIN");
-    m2->setItem(1, (short)gen9833::WaveType::TRIANGLE, "TRI");
-    m2->setItem(2, (short)gen9833::WaveType::SQUARE1, "SQ1");
-    m2->setItem(3, (short)gen9833::WaveType::SQUARE2, "SQ2");
-    m2->setItem(4, (short)gen9833::WaveType::OFF, "OFF");
+    m2->setItem(0, (short)genBase::WaveType::SINE, "SIN");
+    m2->setItem(1, (short)genBase::WaveType::TRIANGLE, "TRI");
+    m2->setItem(2, (short)genBase::WaveType::SQUARE1, "SQ1");
+    m2->setItem(3, (short)genBase::WaveType::SQUARE2, "SQ2");
+    m2->setItem(4, (short)genBase::WaveType::OFF, "OFF");
 
     m3->setItem(0, (short)1, "ON");
     m3->setItem(1, (short)0, "OFF");
@@ -126,25 +126,10 @@ void loop() {
     if (enc.tick()) {
         if (menumode) {
             if (enc.turn()) {  // --------------- обычный поворот
-                if (genCurrent == GEN_SI5351) {
-                    m1->cycleCurrent(enc.getDir());
-                } else if (genCurrent == GEN_AD9833) {
-                    m2->cycleCurrent(enc.getDir());
-                } else if (genCurrent == GEN_PWM) {
-                    m3->cycleCurrent(enc.getDir());
-                }
+                m[genCurrent]->cycleCurrent(enc.getDir());
                 tick2reset();
             } else if (enc.click()) {
-                if (genCurrent == GEN_SI5351) {
-                    g1->setEnabled(m1->getCurrentItem()->val == 1 ? true
-                                                                  : false);
-                } else if (genCurrent == GEN_AD9833) {
-                    g2->setWaveType(
-                        (gen9833::WaveType)m2->getCurrentItem()->val);
-                } else if (genCurrent == GEN_PWM) {
-                    g3->setEnabled(m1->getCurrentItem()->val == 1 ? true
-                                                                  : false);
-                }
+                g[genCurrent]->setMode(m[genCurrent]->getCurrentItem()->val);
                 menumode = false;
                 update = true;
             }
