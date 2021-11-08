@@ -15,8 +15,6 @@ details. By J. CesarSound - ver 1.0 - Dec/2020.
 #include "genPWM.h"
 #include "genMenu.h"
 
-//#define _SERIAL_LOG_
-
 //-----------------------------------------------------------------------------
 #define ENCCCW 2  // DIR_CCW pin
 #define ENCCW 3   // DIR_CW pin
@@ -72,6 +70,10 @@ void tick2reset() {
     tick2name = true;
 }
 
+#ifdef _SERIAL_LOG_
+int _memoryFree();
+#endif
+
 void setup() {
     pinMode(CLK_PIN, OUTPUT);
     pinMode(DATA_PIN, OUTPUT);
@@ -120,8 +122,8 @@ void loop() {
     // опрос этих событий можно проводить в условии,
     // чтобы "не тратить время" на постоянный опрос в loop
 #ifdef _SERIAL_LOG_
-    Serial.print("_memoryFree = ");
-    Serial.println(_memoryFree());
+    //Serial.print("_memoryFree = ");
+    //Serial.println(_memoryFree());
 #endif
     if (enc.tick()) {
         if (menumode) {

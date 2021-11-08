@@ -1,8 +1,8 @@
 #ifndef GEN_X_h
 #define GEN_X_h
 
-#include <Arduino.h> 
-#include <LiquidCrystal_I2C.h>    // by Frank de Brabander
+#include <Arduino.h>
+#include <LiquidCrystal_I2C.h>  // by Frank de Brabander
 
 class genBase {
 public:
