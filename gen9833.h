@@ -6,8 +6,11 @@
 #define DATA_PIN   9    //11	// SPI Data pin number
 #define CLK_PIN    8    //13	// SPI Clock pin number
 
-#include <MD_AD9833.h>     
+#include <MD_AD9833.h>
+
 #include "genBase.h"
+
+#include "utils.h"
 
 class gen9833: public genBase {
 public:
@@ -48,8 +51,6 @@ public:
     void updateFreq() {
         ad9833->setFrequency(MD_AD9833::CHAN_0, (float)freq);
     }
-
-    void updateEnabled() { ad9833->setMode(getModeAD9833()); }
 
     void change_fstep(short dir = 1) override {
         genBase::change_fstep(dir);

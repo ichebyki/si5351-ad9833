@@ -10,10 +10,13 @@ details. By J. CesarSound - ver 1.0 - Dec/2020.
 #include <EncButton.h>          // https://github.com/GyverLibs/EncButton
 #include <LiquidCrystal_I2C.h>  // by Frank de Brabander
 
+#include "utils.h"
+
 #include "gen5351.h"
 #include "gen9833.h"
 #include "genPWM.h"
 #include "genMenu.h"
+#include "genMenuPWM.h"
 
 //-----------------------------------------------------------------------------
 #define ENCCCW 2  // DIR_CCW pin
@@ -33,8 +36,8 @@ gen9833 _g2(lcd);  //(/*DATA_PIN, CLK_PIN, FSYNC_PIN*/);
 genMenu _m2(lcd, 5);
 
 genPWM  _g3(lcd);
-genMenu _m3(lcd, 2);
- 
+genMenuPWM _m3(lcd, 2);
+
 gen5351 *g1 = (gen5351 *)&_g1;
 genMenu *m1 = &_m1;
 gen9833 *g2 = (gen9833 *)&_g2;
@@ -45,7 +48,7 @@ genMenu *m3 = &_m3;
 genBase *g[3] = { g1, g2, g3 };
 genMenu *m[3] = { m1, m2, m3};
 short genCount = 3;
-short genCurrent = 0;  // true if ad9833 is current
+short genCurrent = 0;
 #define GEN_SI5351 0
 #define GEN_AD9833 1
 #define GEN_PWM    2
@@ -91,12 +94,12 @@ void setup() {
     g2->init();
     g3->init();
 
-    genCurrent = 0;
+    genCurrent = 2;
     welcome = true;
     update = true;
 
-    m1->setItem(0, (short)1, "ON");
-    m1->setItem(1, (short)0, "OFF");
+    m1->setItem(0, (short)genBase::WaveType::SQUARE1, "ON");
+    m1->setItem(1, (short)genBase::WaveType::OFF, "OFF");
 
     m2->setItem(0, (short)genBase::WaveType::SINE, "SIN");
     m2->setItem(1, (short)genBase::WaveType::TRIANGLE, "TRI");
@@ -104,11 +107,15 @@ void setup() {
     m2->setItem(3, (short)genBase::WaveType::SQUARE2, "SQ2");
     m2->setItem(4, (short)genBase::WaveType::OFF, "OFF");
 
-    m3->setItem(0, (short)1, "ON");
-    m3->setItem(1, (short)0, "OFF");
+    m3->setItem(0, (short)genBase::WaveType::SQUARE1, "ON");
+    m3->setItem(1, (short)genBase::WaveType::OFF, "OFF");
 }
 
 void loop() {
+#ifdef _SERIAL_LOG_
+    // Serial.print("_memoryFree = ");
+    // Serial.println(_memoryFree());
+#endif
     // тик вернёт отличное от нуля значение, если произошло событие:
     // 1 - left + turn
     // 2 - right + turn
@@ -118,22 +125,35 @@ void loop() {
     // 6 - held
     // 7 - step
     // 8 - press
-
     // опрос этих событий можно проводить в условии,
     // чтобы "не тратить время" на постоянный опрос в loop
-#ifdef _SERIAL_LOG_
-    //Serial.print("_memoryFree = ");
-    //Serial.println(_memoryFree());
-#endif
     if (enc.tick()) {
         if (menumode) {
-            if (enc.turn()) {  // --------------- обычный поворот
-                m[genCurrent]->cycleCurrent(enc.getDir());
-                tick2reset();
-            } else if (enc.click()) {
-                g[genCurrent]->setMode(m[genCurrent]->getCurrentItem()->val);
-                menumode = false;
-                update = true;
+            if (genCurrent == GEN_PWM) {
+                if (enc.turn()) {  // --------------- обычный поворот
+                    ((genMenuPWM *)m[genCurrent])->changePWM(enc.getDir());
+                    tick2reset();
+                } else if (enc.turnH()) {  // --------------- поворот с нажатием
+                    m[genCurrent]->cycleCurrent(enc.getDir());
+                    tick2reset();
+                } else if (enc.click()) {
+                    ((genPWM *)g[genCurrent])
+                        ->setPWM(((genMenuPWM *)m[genCurrent])->getPWM());
+                    g[genCurrent]->setMode(
+                        m[genCurrent]->getCurrentItem()->val);
+                    menumode = false;
+                    update = true;
+                }
+            } else {
+                if (enc.turn()) {  // --------------- обычный поворот
+                    m[genCurrent]->cycleCurrent(enc.getDir());
+                    tick2reset();
+                } else if (enc.click()) {
+                    g[genCurrent]->setMode(
+                        m[genCurrent]->getCurrentItem()->val);
+                    menumode = false;
+                    update = true;
+                }
             }
         } else {
             if (enc.turn()) {  // --------------- обычный поворот
@@ -146,6 +166,10 @@ void loop() {
                 g[genCurrent]->change_fstep(enc.getDir());
                 tick2reset();
             } else if (enc.click()) {  // --------------- клик
+                if (genCurrent == GEN_PWM) {
+                    ((genMenuPWM *)m[GEN_PWM])
+                        ->setPWM(((genPWM *)g[GEN_PWM])->getPWM());
+                }
                 menumode = true;
                 tick2reset();
             } else if (enc.held()) {  // --------------- однократно вернёт true
@@ -192,6 +216,7 @@ void loop() {
     }
 }
 
+#ifdef _SERIAL_LOG_
 // Переменные, создаваемые процессом сборки,
 // когда компилируется скетч
 extern int __bss_end;
@@ -206,3 +231,4 @@ int _memoryFree() {
         freeValue = ((int)&freeValue) - ((int)__brkval);
     return freeValue;
 }
+#endif

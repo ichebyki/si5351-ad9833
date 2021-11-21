@@ -3,10 +3,12 @@
 
 #include <si5351.h>  // Etherkit https://github.com/etherkit/Si5351Arduino
 
+#include "utils.h"
+
 #include "genBase.h"
 
 class gen5351 : public genBase {
-   public:
+public:
     gen5351(LiquidCrystal_I2C *lcd, uint8_t _i2c_addr = SI5351_BUS_BASE_ADDR) {
         this->lcd = lcd;
         i2c_addr = _i2c_addr;
@@ -36,7 +38,7 @@ class gen5351 : public genBase {
                                 pll_freq, SI5351_CLK0);
     }
 
-    void updateEnabled() {
+    void updateEnabled() override {
         if (enabled) {
             si5351->output_enable(SI5351_CLK0,
                                   1);  // 1 - Enable / 0 - Disable CLK

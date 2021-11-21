@@ -1,29 +1,26 @@
-#ifndef GEN_MENU_h
-#define GEN_MENU_h
-
-#include <Arduino.h>
-#include <LiquidCrystal_I2C.h>  // by Frank de Brabander
+#ifndef GEN_MENU_PWM_h
+#define GEN_MENU_PWM_h
 
 #include "utils.h"
 
-struct mitem {
-    short ind;
-    short val;
-    const char* str;
-} _mitem;
+#include "genMenu.h"
 
-class genMenu {
+class genMenuPWM : public genMenu {
 public:
- genMenu(LiquidCrystal_I2C* lcd, short count) {
-     this->lcd = lcd;
-     this->count = count;
-     items = new mitem[count];
- }
+    genMenuPWM(LiquidCrystal_I2C* lcd, short count, short pwm = 50)
+        : genMenu(lcd, count) {
+        this->lcd = lcd;
+        this->count = count;
+        items = new mitem[count];
+        PWM = pwm;
+    }
 
-    virtual void show() {
+    void show() override {
         lcd->clear();
-        lcd->setCursor(3, 0);
-        lcd->print("SELECT MODE");
+        lcd->setCursor(4, 0);
+        lcd->print("PWM: ");
+        lcd->print(PWM);
+        lcd->print(" %");
 
         if (count > 2) {
             lcd->setCursor(0, 1);
@@ -59,38 +56,32 @@ public:
         lcd->print("<");
     }
 
-    short cycleCurrent(short dir) {
+    short changePWM(short dir) {
         if (dir > 0) {
-            if (current == (count - 1)) {
-                current = 0;
-            } else {
-                current++;
+            if (PWM < 99) {
+                PWM += 1;
             }
         } else {
-            if (current == 0) {
-                current = count - 1;
-            } else {
-                current--;
+            if (PWM > 1) {
+                PWM -= 1;
             }
         }
-        return current;
+        return PWM;
     }
 
-    mitem* getCurrentItem() {
-        return &items[current];
+    short setPWM(short pwm) {
+        if (pwm > 0 && pwm < 100) {
+            PWM = pwm;
+        }
+        return PWM;
     }
 
-    void setItem(short ind, short val, const char* str) {
-        items[ind].ind = ind;
-        items[ind].val = val;
-        items[ind].str = str;
+    short getPWM() {
+        return PWM;
     }
 
-protected:
-    LiquidCrystal_I2C *lcd;
-    short current = 0;
-    short count;
-    mitem* items;
+private:
+    short PWM = 50;  // %% of the PWM
 };
 
-#endif  // GEN_MENU_h
+#endif  // GEN_MENU_PWM_h
